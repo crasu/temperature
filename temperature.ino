@@ -34,9 +34,8 @@ void setup(void)
 
   // Start up the 1 Wire temperature sensor
   sensors.begin();
-  currentTemperature = getTemperature();
-
-  temperatureTimer.every(1000*60, saveTemperature);
+  saveTemperature();
+  temperatureTimer.every(30*1000, saveTemperature);
 
   while(1) {
     handleRequests(); 
@@ -88,7 +87,6 @@ String readHttpLine(EthernetClient client)
 {
   String line = client.readStringUntil('\n');     
   line.replace("\r", "");
-  Serial.println("httpline'" + line + "'");  
 
   return line;
 }
@@ -114,15 +112,13 @@ float getTemperature()
   float temperature = 0.0;
   Serial.print("Requesting temperatures...");
   sensors.requestTemperatures(); // Send the command to get temperatures
-  Serial.print("DONE - Temperature is: ");
-  temperature = sensors.getTempCByIndex(0);
-  Serial.println(temperature);
-  return temperature;
+  Serial.println("DONE");
+  return sensors.getTempCByIndex(0);
 }
 
 void saveTemperature() {
   currentTemperature = getTemperature();
-  Serial.print('Saved temperature ');
+  Serial.print("Saved temperature: ");
   Serial.println(currentTemperature);
 }
 
