@@ -1,22 +1,19 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <SPI.h>
+#include <Time.h> 
 #include <Ethernet.h>
+#include <EthernetUdp.h>
+#include "Ntp.h"
 #include <Timer.h>
 
 byte mac[] = { 
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xCD };
 IPAddress ip(192, 168, 100, 177);
-
 EthernetServer server(80);
 
-// Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 2
-
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-OneWire oneWire(ONE_WIRE_BUS);
-
-// Pass our oneWire reference to Dallas Temperature. 
+const int ONE_WIRE_PIN=2;
+OneWire oneWire(ONE_WIRE_PIN);
 DallasTemperature sensors(&oneWire);
 
 Timer temperatureTimer;
@@ -30,13 +27,18 @@ void setup(void)
   delay(1000);
 
   startEthernet();
-  Serial.println("Started Ethernet Thermometer");
 
+  initNtp();
+    
+  Serial.print("Waiting for clock sync -");
+  Serial.println("DONE");
+  
   // Start up the 1 Wire temperature sensor
   sensors.begin();
   saveTemperature();
   temperatureTimer.every(30*1000, saveTemperature);
 
+  Serial.println("Started Ethernet Thermometer");
   while(1) {
     handleRequests(); 
     temperatureTimer.update();
@@ -100,7 +102,17 @@ void sendHttpResponse(EthernetClient client)
   client.println();
   client.println("<!DOCTYPE HTML>");
   client.println("<html>");
-  client.println("<body style=\"font-size:15vmax;text-align:center;font-family:sans-serif;color:#1F2950;background:#388CBB;position: absolute;top:50%;left:50%;margin-right: -50%;transform: translate(-50%, -50%);\">");
+  client.println(String("<body style=") +
+      "\"font-size:15vmax;" +
+      "text-align:center;" +
+      "font-family:sans-serif;" + 
+      "color:#1F2950;" +
+      "background:#388CBB;" +
+      "position: absolute;" + 
+      "top:50%;" + 
+      "left:50%;" +
+      "margin-right: -50%;" +
+      "transform: translate(-50%, -50%);\">");
   client.print(currentTemperature);
   client.print(" &deg;C");
   client.println("<body>");
@@ -109,7 +121,6 @@ void sendHttpResponse(EthernetClient client)
 
 float getTemperature()
 { 
-  float temperature = 0.0;
   Serial.print("Requesting temperatures...");
   sensors.requestTemperatures(); // Send the command to get temperatures
   Serial.println("DONE");
@@ -119,7 +130,8 @@ float getTemperature()
 void saveTemperature() {
   currentTemperature = getTemperature();
   Serial.print("Saved temperature: ");
-  Serial.println(currentTemperature);
+  Serial.print(currentTemperature);
+  Serial.println(String(" at ") + now());
 }
 
 void loop()
