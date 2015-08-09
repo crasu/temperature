@@ -4,13 +4,13 @@
 IPAddress timeServer(132, 163, 4, 101); // time-a.timefreq.bldrdoc.gov
 const int timeZone = 1;     // Central European Time
 EthernetUDP Udp;
-const unsigned int LOCAL_PORT = 8888;  // local port to listen for UDP packets
+const unsigned int LOCAL_PORT = 8888;
 
 const int NTP_PACKET_SIZE = 48;
 byte packetBuffer[NTP_PACKET_SIZE];
 
 void sendNTPpacket(IPAddress &address)
-{
+{ 
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   // Initialize values needed to form NTP request
@@ -32,15 +32,15 @@ void sendNTPpacket(IPAddress &address)
 }
 
 time_t getNtpTime()
-{
+{ 
   while (Udp.parsePacket() > 0) ; // discard any previously received packets
-  Serial.println("Transmit NTP Request");
+  Serial.println(F("Send NTP Request"));
   sendNTPpacket(timeServer);
   uint32_t beginWait = millis();
   while (millis() - beginWait < 1500) {
     int size = Udp.parsePacket();
     if (size >= NTP_PACKET_SIZE) {
-      Serial.println("Receive NTP Response");
+      Serial.println(F("Recv NTP Response"));
       Udp.read(packetBuffer, NTP_PACKET_SIZE);  // read packet into the buffer
       unsigned long secsSince1900;
       // convert four bytes starting at location 40 to a long integer
@@ -51,7 +51,7 @@ time_t getNtpTime()
       return secsSince1900 - 2208988800UL + timeZone * SECS_PER_HOUR;
     }
   }
-  Serial.println("No NTP Response :-(");
+  Serial.println(F("No NTP Response"));
   return 0; // return 0 if unable to get the time
 }
 

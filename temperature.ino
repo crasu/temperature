@@ -3,9 +3,14 @@
 #include <SPI.h>
 #include <Time.h> 
 #include <Ethernet.h>
-#include <EthernetUdp.h>
-#include "Ntp.h"
+#include <EthernetUdp.h>"
 #include <Timer.h>
+#include <SD.h>
+#include "Ntp.h"
+
+#define CHIP_SELECT 4
+
+#define SD_CS_PIN SS
 
 byte mac[] = { 
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xCD };
@@ -18,62 +23,51 @@ DallasTemperature sensors(&oneWire);
 
 Timer temperatureTimer;
 
-float currentTemperature = 0.0;
+float currentTemperature1 = 0.0,
+      currentTemperature2 = 0.0;
 
 void setup(void)
 {
-  // start serial port
   Serial.begin(9600);
   delay(1000);
-
-  startEthernet();
-
-  initNtp();
-    
-  Serial.print("Waiting for clock sync -");
-  Serial.println("DONE");
   
-  // Start up the 1 Wire temperature sensor
+  if (!SD.begin(CHIP_SELECT)) {
+    Serial.println(F("SDCard failed"));
+    return;
+  }
+  
+  startEthernet();
+  initNtp();
+  
   sensors.begin();
   saveTemperature();
   temperatureTimer.every(30*1000, saveTemperature);
 
-  Serial.println("Started Ethernet Thermometer");
-  while(1) {
-    handleRequests(); 
-    temperatureTimer.update();
-  }
+  Serial.println(F("Started!"));
 }
 
 void startEthernet()
 {
   Ethernet.begin(mac, ip);
   server.begin();
-  Serial.print("server is at ");
-  Serial.println(Ethernet.localIP());  
-}
-
-
-void processGetRequest(String line)
-{ 
-  Serial.println("Processing get request");
 }
 
 void handleRequests() 
 {
   EthernetClient client = server.available();
   if (client) {
-    Serial.println("new client");
+    Serial.println(F("new client"));
     while (client.connected()) {
       if (client.available()) {
         String line = readHttpLine(client);
 
-        if (line.indexOf("GET /") >= 0) {
-          processGetRequest(line);  
+        if (line.startsWith("GET /data.json")) {
+          sendFileResponse(client);
+          break;
         }
 
         if (line.equals("")) {
-          sendHttpResponse(client);
+          sendHtmlResponse(client);
           break;
         }
       }
@@ -81,7 +75,6 @@ void handleRequests()
 
     delay(1);
     client.stop();
-    Serial.println("client disonnected");
   }
 }
 
@@ -93,48 +86,80 @@ String readHttpLine(EthernetClient client)
   return line;
 }
 
-void sendHttpResponse(EthernetClient client)
+void sendFileResponse(EthernetClient client)
 {
-  Serial.println("Sending response now");
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
-  client.println("Connnection: close");
-  client.println();
-  client.println("<!DOCTYPE HTML>");
-  client.println("<html>");
-  client.println(String("<body style=") +
-      "\"font-size:15vmax;" +
-      "text-align:center;" +
-      "font-family:sans-serif;" + 
-      "color:#1F2950;" +
-      "background:#388CBB;" +
-      "position: absolute;" + 
-      "top:50%;" + 
-      "left:50%;" +
-      "margin-right: -50%;" +
-      "transform: translate(-50%, -50%);\">");
-  client.print(currentTemperature);
-  client.print(" &deg;C");
-  client.println("<body>");
-  client.println("</html>");
-}  
+  Serial.println("Sending log.json");
+  sendHeader(client, "text/plain");
 
-float getTemperature()
-{ 
-  Serial.print("Requesting temperatures...");
-  sensors.requestTemperatures(); // Send the command to get temperatures
-  Serial.println("DONE");
-  return sensors.getTempCByIndex(0);
+  File dataFile = SD.open("log.txt");
+
+  while (dataFile.available()) {
+    client.write(dataFile.read());
+  }
+ 
+  dataFile.close();
+}
+
+void sendHeader(EthernetClient client, char* contentType)
+{
+  Serial.println(F("HTTP response"));
+  client.print(F("HTTP/1.1 200 OK\nContent-Type: "));
+  client.println(contentType);
+  client.println(F("Connnection: close\n"
+    "\n"));
+}
+
+void sendHtmlResponse(EthernetClient client)
+{
+  sendHeader(client, "text/html");
+
+  client.println(F("<!DOCTYPE HTML>"
+    "<html>"
+    "<body style="
+    "\"font-size:10vmax;"
+    "text-align:center;"
+    "font-family:sans-serif;"
+    "color:#1F2950;"
+    "background:#388CBB;"
+    "position: absolute;"
+    "top:50%;"
+    "left:50%;"
+    "margin-right: -50%;"
+    "transform: translate(-50%, -50%);\">"));
+  client.print("Aussen: ");
+  client.print(currentTemperature1);
+  client.print(" &deg;C<br> Innen: ");
+  client.print(currentTemperature2);
+  client.print(" &deg;C");
+  client.println(F("<body>"
+    "</html>"));
 }
 
 void saveTemperature() {
-  currentTemperature = getTemperature();
-  Serial.print("Saved temperature: ");
-  Serial.print(currentTemperature);
-  Serial.println(String(" at ") + now());
+  Serial.println(F("Getting temps"));
+  sensors.requestTemperatures();
+  currentTemperature1 = sensors.getTempCByIndex(0);
+  currentTemperature2 = sensors.getTempCByIndex(1);
+
+  File dataFile = SD.open("log.txt", FILE_WRITE);
+
+  if (dataFile && timeStatus() == timeSet) {
+    dataFile.print(now());
+    dataFile.print(",");
+    dataFile.print(currentTemperature1);
+    dataFile.print(",");
+    dataFile.println(currentTemperature2);
+    dataFile.close();
+  }
+  
+  Serial.println(F("Saved temps"));
+  Serial.println(currentTemperature1);
+  Serial.println(currentTemperature2);
 }
 
 void loop()
 {
+  handleRequests(); 
+  temperatureTimer.update();
 }
 
