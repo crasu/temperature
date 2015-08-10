@@ -141,9 +141,18 @@ void saveTemperature() {
   currentTemperature1 = sensors.getTempCByIndex(0);
   currentTemperature2 = sensors.getTempCByIndex(1);
 
+  Serial.println(currentTemperature1);
+  Serial.println(currentTemperature2);
+
+  time_t timeNow = now();
+  
+  if (timeStatus() != timeSet || timeNow % 4 == 0) {
+    return;
+  }
+  
   File dataFile = SD.open("log.txt", FILE_WRITE);
 
-  if (dataFile && timeStatus() == timeSet) {
+  if (dataFile) {
     dataFile.print(now());
     dataFile.print(",");
     dataFile.print(currentTemperature1);
@@ -153,8 +162,6 @@ void saveTemperature() {
   }
   
   Serial.println(F("Saved temps"));
-  Serial.println(currentTemperature1);
-  Serial.println(currentTemperature2);
 }
 
 void loop()
