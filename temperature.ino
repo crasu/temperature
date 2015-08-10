@@ -9,7 +9,6 @@
 #include "Ntp.h"
 
 #define CHIP_SELECT 4
-
 #define SD_CS_PIN SS
 
 byte mac[] = { 
@@ -144,9 +143,7 @@ void saveTemperature() {
   Serial.println(currentTemperature1);
   Serial.println(currentTemperature2);
 
-  time_t timeNow = now();
-  
-  if (timeStatus() != timeSet || timeNow % 4 == 0) {
+  if (timeStatus() != timeSet || now() % 4 == 0) {
     return;
   }
   
