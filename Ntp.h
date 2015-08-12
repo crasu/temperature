@@ -2,7 +2,7 @@
 #include <EthernetUdp.h>
 
 IPAddress timeServer(132, 163, 4, 101); // time-a.timefreq.bldrdoc.gov
-const int timeZone = 1;     // Central European Time
+const int timeZone = 0;     // Central European Time
 EthernetUDP Udp;
 const unsigned int LOCAL_PORT = 8888;
 
@@ -48,7 +48,7 @@ time_t getNtpTime()
       secsSince1900 |= (unsigned long)packetBuffer[41] << 16;
       secsSince1900 |= (unsigned long)packetBuffer[42] << 8;
       secsSince1900 |= (unsigned long)packetBuffer[43];
-      return secsSince1900 - 2208988800UL + timeZone * SECS_PER_HOUR;
+      return secsSince1900 - 2208988800UL;
     }
   }
   Serial.println(F("No NTP Response"));

@@ -10,6 +10,7 @@
 
 #define CHIP_SELECT 4
 #define SD_CS_PIN SS
+#define LOG_TIME_DELTA 300
 
 byte mac[] = { 
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xCD };
@@ -115,7 +116,7 @@ void sendHtmlResponse(EthernetClient client)
   client.println(F("<!DOCTYPE HTML>"
     "<html>"
     "<body style="
-    "\"font-size:10vmax;"
+    "\"font-size:12vmin;"
     "text-align:center;"
     "font-family:sans-serif;"
     "color:#1F2950;"
@@ -125,9 +126,9 @@ void sendHtmlResponse(EthernetClient client)
     "left:50%;"
     "margin-right: -50%;"
     "transform: translate(-50%, -50%);\">"));
-  client.print("Aussen: ");
+  client.print("Out: ");
   client.print(currentTemperature1);
-  client.print(" &deg;C<br> Innen: ");
+  client.print(" &deg;C<br> In: ");
   client.print(currentTemperature2);
   client.print(" &deg;C");
   client.println(F("<body>"
@@ -135,6 +136,8 @@ void sendHtmlResponse(EthernetClient client)
 }
 
 void saveTemperature() {
+  static time_t oldTime = 0;
+  
   Serial.println(F("Getting temps"));
   sensors.requestTemperatures();
   currentTemperature1 = sensors.getTempCByIndex(0);
@@ -143,13 +146,14 @@ void saveTemperature() {
   Serial.println(currentTemperature1);
   Serial.println(currentTemperature2);
 
-  if (timeStatus() != timeSet || now() % 4 == 0) {
+  if (timeStatus() != timeSet || now() - oldTime < LOG_TIME_DELTA) {
     return;
   }
   
   File dataFile = SD.open("log.txt", FILE_WRITE);
 
   if (dataFile) {
+    oldTime = now();
     dataFile.print(now());
     dataFile.print(",");
     dataFile.print(currentTemperature1);
