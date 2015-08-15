@@ -10,7 +10,7 @@
 
 #define CHIP_SELECT 4
 #define SD_CS_PIN SS
-#define LOG_TIME_DELTA 300
+#define LOG_TIME_DELTA 600
 
 byte mac[] = { 
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xCD };
@@ -115,23 +115,23 @@ void sendHtmlResponse(EthernetClient client)
 
   client.println(F("<!DOCTYPE HTML>"
     "<html>"
-    "<body style="
-    "\"font-size:12vmin;"
-    "text-align:center;"
+    "<body style=\"background:#388CBB;\">"));
+  client.print(F("<div style="
+    "\"font-size:8vmin;"
     "font-family:sans-serif;"
     "color:#1F2950;"
-    "background:#388CBB;"
-    "position: absolute;"
-    "top:50%;"
-    "left:50%;"
-    "margin-right: -50%;"
-    "transform: translate(-50%, -50%);\">"));
+    "height: 30vh;"
+    "line-height:15vh;"
+    "margin-top:35vh;"
+    "text-align:center;"
+    "vertical-align:middle;\">"));
   client.print("Out: ");
   client.print(currentTemperature1);
   client.print(" &deg;C<br> In: ");
   client.print(currentTemperature2);
   client.print(" &deg;C");
-  client.println(F("<body>"
+  client.println(F("</div>"
+    "</body>"
     "</html>"));
 }
 
