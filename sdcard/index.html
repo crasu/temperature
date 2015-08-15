@@ -6,14 +6,15 @@ svg {
   font: 10px sans-serif;
 }
 
-.area {
-  fill: steelblue;
-  clip-path: url(#clip);
-}
-
 .line {
   fill: none;
   stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.line2 {
+  fill: none;
+  stroke: red;
   stroke-width: 1.5px;
 }
 
@@ -67,7 +68,12 @@ var line2 = d3.svg.line()
 var brushline = d3.svg.line()
     .interpolate("basis")
     .x(function(d) { return x(d.date); })
-    .y(function(d) { return y(d.temp1)/height2; });
+    .y(function(d) { return y(d.temp1) / height2 * 5; });
+
+var brushline2 = d3.svg.line()
+    .interpolate("basis")
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.temp2) / height2 * 5; });
 
 var svg = d3.select("body").append("svg")
     .attr("width", width + margin.left + margin.right)
@@ -104,7 +110,7 @@ d3.csv("data.csv", type, function(error, data) {
 
     focus.append("path")
         .datum(data)
-        .attr("class", "line")
+        .attr("class", "line2")
         .attr("d", line2);
 
     focus.append("g")
@@ -120,6 +126,11 @@ d3.csv("data.csv", type, function(error, data) {
         .datum(data)
         .attr("class", "line")
         .attr("d", brushline);
+
+    context.append("path")
+        .datum(data)
+        .attr("class", "line2")
+        .attr("d", brushline2);
 
     context.append("g")
         .attr("class", "x axis")
@@ -137,6 +148,7 @@ d3.csv("data.csv", type, function(error, data) {
 function brushed() {
     x.domain(brush.empty() ? x2.domain() : brush.extent());
     focus.select(".line").attr("d", line);
+    focus.select(".line2").attr("d", line2);
     focus.select(".x.axis").call(xAxis);
 }
 
@@ -147,4 +159,3 @@ function type(d) {
 }
 
 </script>
-
