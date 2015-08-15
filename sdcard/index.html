@@ -62,6 +62,11 @@ var line = d3.svg.line()
 var line2 = d3.svg.line()
     .interpolate("basis")
     .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.temp2); });
+
+var brushline = d3.svg.line()
+    .interpolate("basis")
+    .x(function(d) { return x(d.date); })
     .y(function(d) { return y(d.temp1)/height2; });
 
 var svg = d3.select("body").append("svg")
@@ -83,55 +88,62 @@ var context = svg.append("g")
     .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
 
 d3.csv("data.csv", type, function(error, data) {
-  x.domain(d3.extent(data.map(function(d) { return d.date; })));
-  y.domain([0, d3.max(data.map(function(d) { return d.temp1; }))]);
-  x2.domain(x.domain());
-  y2.domain(y.domain());
+    x.domain(d3.extent(data.map(function(d) { return d.date; })));
+    y.domain(d3.extent(data.map(function(d) { return d.temp1; })
+                .concat(data.map(function(d) { return d.temp1; }))
+            ));
+    x2.domain(x.domain());
+    y2.domain(y.domain());
 
-  data.sort(function(d1, d2) { return d1.date - d2.date });
+    data.sort(function(d1, d2) { return d1.date - d2.date });
 
-  focus.append("path")
-  .datum(data)
-      .attr("class", "line")
-      .attr("d", line);
+    focus.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .attr("d", line);
 
-  focus.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xAxis);
+    focus.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .attr("d", line2);
 
-  focus.append("g")
-      .attr("class", "y axis")
-      .call(yAxis);
+    focus.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
 
-  context.append("path")
-      .datum(data)
-      .attr("class", "line")
-      .attr("d", line2);
+    focus.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+   
+    context.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .attr("d", brushline);
 
-  context.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(0," + height2 + ")")
-      .call(xAxis2);
+    context.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height2 + ")")
+        .call(xAxis2);
 
-  context.append("g")
-      .attr("class", "x brush")
-      .call(brush)
-    .selectAll("rect")
-      .attr("y", -6)
-      .attr("height", height2 + 7);
+    context.append("g")
+        .attr("class", "x brush")
+        .call(brush)
+        .selectAll("rect")
+        .attr("y", -6)
+        .attr("height", height2 + 7);
 });
 
 function brushed() {
-  x.domain(brush.empty() ? x2.domain() : brush.extent());
-  focus.select(".line").attr("d", line);
-  focus.select(".x.axis").call(xAxis);
+    x.domain(brush.empty() ? x2.domain() : brush.extent());
+    focus.select(".line").attr("d", line);
+    focus.select(".x.axis").call(xAxis);
 }
 
 function type(d) {
-  d.date = +d.date * 1000;
-  d.temp1 = +d.temp1;
-  return d;
+    d.date = +d.date * 1000;
+    d.temp1 = +d.temp1;
+    return d;
 }
 
 </script>
