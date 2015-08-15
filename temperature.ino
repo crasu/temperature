@@ -61,13 +61,18 @@ void handleRequests()
       if (client.available()) {
         String line = readHttpLine(client);
 
-        if (line.startsWith("GET /data.json")) {
-          sendFileResponse(client);
+        if (line.startsWith("GET / ")) {
+          sendHtmlResponse(client);
+          break;
+        }
+
+        if (line.startsWith("GET /")) {
+          String filename = line.substring(5, line.substring(5).indexOf(' ') + 5);
+          sendFileResponse(client, filename);
           break;
         }
 
         if (line.equals("")) {
-          sendHtmlResponse(client);
           break;
         }
       }
@@ -86,13 +91,24 @@ String readHttpLine(EthernetClient client)
   return line;
 }
 
-void sendFileResponse(EthernetClient client)
-{
-  Serial.println("Sending log.json");
-  sendHeader(client, "text/plain");
+void sendFileResponse(EthernetClient client, String filename)
+{   
+  Serial.print("File:");
+  Serial.println(filename);
 
-  File dataFile = SD.open("log.txt");
-
+  File dataFile = SD.open(filename);
+  
+  if(filename.endsWith("htm")) {
+    sendHeader(client, "text/html");
+  } else {
+    sendHeader(client, "text/plain");
+  }
+  
+  if(!dataFile) {
+    client.println(F("404"));
+    return;
+  }
+  
   while (dataFile.available()) {
     client.write(dataFile.read());
   }
@@ -105,8 +121,7 @@ void sendHeader(EthernetClient client, char* contentType)
   Serial.println(F("HTTP response"));
   client.print(F("HTTP/1.1 200 OK\nContent-Type: "));
   client.println(contentType);
-  client.println(F("Connnection: close\n"
-    "\n"));
+  client.println(F("Connnection: close\n"));
 }
 
 void sendHtmlResponse(EthernetClient client)
