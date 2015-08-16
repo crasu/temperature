@@ -109,9 +109,9 @@ void sendFileResponse(EthernetClient client, String filename)
     return;
   }
     
-  byte buf[192]; 
+  byte buf[128]; 
   while (dataFile.available()) {
-    int count = dataFile.read(buf, 192);
+    int count = dataFile.read(buf, 128);
     client.write(buf, count);
   }
  
