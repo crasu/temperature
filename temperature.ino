@@ -108,9 +108,11 @@ void sendFileResponse(EthernetClient client, String filename)
     client.println(F("404"));
     return;
   }
-  
+    
+  byte buf[192]; 
   while (dataFile.available()) {
-    client.write(dataFile.read());
+    int count = dataFile.read(buf, 192);
+    client.write(buf, count);
   }
  
   dataFile.close();
@@ -135,7 +137,7 @@ void sendHtmlResponse(EthernetClient client)
     "\"font-size:8vmin;"
     "font-family:sans-serif;"
     "color:#1F2950;"
-    "height: 30vh;"
+    "height:30vh;"
     "line-height:15vh;"
     "margin-top:35vh;"
     "text-align:center;"
@@ -153,7 +155,7 @@ void sendHtmlResponse(EthernetClient client)
 void saveTemperature() {
   static time_t oldTime = 0;
   
-  Serial.println(F("Getting temps"));
+  Serial.println(F("Get temps"));
   sensors.requestTemperatures();
   currentTemperature1 = sensors.getTempCByIndex(0);
   currentTemperature2 = sensors.getTempCByIndex(1);
@@ -177,7 +179,7 @@ void saveTemperature() {
     dataFile.close();
   }
   
-  Serial.println(F("Saved temps"));
+  Serial.println(F("Save temps"));
 }
 
 void loop()
